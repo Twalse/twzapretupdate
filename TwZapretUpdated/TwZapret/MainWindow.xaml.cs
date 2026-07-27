@@ -242,6 +242,9 @@ namespace TwZapret
             }
             else
             {
+                if (discordTimer != null) discordTimer.Stop();
+                if (monitorTimer != null) monitorTimer.Stop();
+                if (statusTimer != null) statusTimer.Stop();
                 discordClient?.Dispose();
                 notifyIcon.Dispose();
                 if (cpuCounter != null) cpuCounter.Dispose();
