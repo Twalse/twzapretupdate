@@ -107,7 +107,7 @@
             <Grid x:Name="Tab1_Main" Grid.Row="1" Grid.Column="1" Visibility="Visible">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock x:Name="MainTitle" Text="Zapret" FontSize="48" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="FileNameText" Text="(файл не выбран)" Foreground="#A0A0A0" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <ComboBox x:Name="StrategyCombo" Width="300" Height="35" Margin="0,0,0,20" Background="#1e1f22" Foreground="White" BorderBrush="#5865F2" SelectionChanged="StrategyCombo_SelectionChanged" DisplayMemberPath="Key" SelectedValuePath="Value" />
                     <Button x:Name="ToggleBtn" Content="ВКЛЮЧИТЬ" Width="200" Height="60" Background="#23a559" Foreground="White" Click="ToggleBtn_Click" Cursor="Hand" FontWeight="Bold" FontSize="20">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
                     </Button>
@@ -222,7 +222,7 @@
                     <TextBlock Text="Настройки" FontSize="32" FontWeight="Bold" Foreground="White" Margin="0,0,0,20"/>
 
                     <StackPanel Margin="0,0,0,20">
-                        <CheckBox x:Name="AutoStartCheck" Content="Запускать вместе с Windows" Foreground="White" Margin="0,0,0,10" Click="SettingsCheck_Changed"/>
+                        <CheckBox x:Name="AutoStartCheck" Content="Запускать обход при старте системы" Foreground="White" Margin="0,0,0,10" Click="SettingsCheck_Changed"/>
                         <CheckBox x:Name="MinimizeTrayCheck" Content="Сворачивать в трей вместо закрытия" Foreground="White" Click="SettingsCheck_Changed"/>
                     </StackPanel>
 
@@ -249,6 +249,8 @@
                         <ComboBoxItem Content="Темная (Dark)"/>
                         <ComboBoxItem Content="Тёмно-зеленая"/>
                         <ComboBoxItem Content="Фиолетовая"/>
+                        <ComboBoxItem Content="Океан (Ocean)"/>
+                        <ComboBoxItem Content="Закат (Sunset)"/>
                     </ComboBox>
                 </StackPanel>
             </Grid>

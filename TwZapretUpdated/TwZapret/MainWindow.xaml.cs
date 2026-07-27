@@ -47,13 +47,14 @@ namespace TwZapret
         private string activeFilePath = "";
         private string zapretFolder = "";
         private bool isAppLoaded = false;
-        private string configPath = "config.json";
+        private string configPath = "";
         private AppSettings currentSettings = new AppSettings();
 
         private System.Windows.Forms.NotifyIcon notifyIcon = null!;
         private DiscordRpcClient discordClient = null!;
         private DispatcherTimer discordTimer = null!;
         private DispatcherTimer monitorTimer = null!;
+        private DispatcherTimer statusTimer = null!;
         private PerformanceCounter cpuCounter = null!;
         private PerformanceCounter ramCounter = null!;
 
@@ -64,14 +65,89 @@ namespace TwZapret
             SetupTrayIcon();
             InitDiscordRpc();
             InitHardwareMonitor();
+            InitStatusMonitor();
             LoadSettings();
             isAppLoaded = true;
+
+            // Trigger manual selection for first launch to ensure activeFilePath is set
+            if (string.IsNullOrEmpty(activeFilePath) && StrategyCombo != null && StrategyCombo.Items.Count > 0)
+            {
+                StrategyCombo_SelectionChanged(StrategyCombo, null!);
+            }
+
+            CheckAutostart();
+        }
+
+        private void CheckAutostart()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Contains("--autostart"))
+            {
+                WindowState = WindowState.Minimized;
+                Hide();
+                if (currentSettings.AutoStart && !string.IsNullOrEmpty(activeFilePath) && File.Exists(activeFilePath))
+                {
+                    try
+                    {
+                        string? dir = Path.GetDirectoryName(activeFilePath);
+                        if (dir != null)
+                        {
+                            ProcessStartInfo psi = new ProcessStartInfo
+                            {
+                                FileName = activeFilePath,
+                                WorkingDirectory = dir,
+                                UseShellExecute = true,
+                                Verb = "runas",
+                                WindowStyle = ProcessWindowStyle.Hidden
+                            };
+                            Process.Start(psi);
+                            StatusTimer_Tick(null, EventArgs.Empty);
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private void InitStatusMonitor()
+        {
+            statusTimer = new DispatcherTimer();
+            statusTimer.Interval = TimeSpan.FromSeconds(1.5);
+            statusTimer.Tick += StatusTimer_Tick;
+            statusTimer.Start();
+        }
+
+        private void StatusTimer_Tick(object? sender, EventArgs e)
+        {
+            bool isWinwsRunning = Process.GetProcessesByName("winws").Length > 0;
+            if (isWinwsRunning != isRunning)
+            {
+                isRunning = isWinwsRunning;
+                if (ToggleBtn != null)
+                {
+                    if (isRunning)
+                    {
+                        ToggleBtn.Content = "ВЫКЛЮЧИТЬ";
+                        ToggleBtn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#da373c"));
+                    }
+                    else
+                    {
+                        ToggleBtn.Content = "ВКЛЮЧИТЬ";
+                        ToggleBtn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#23a559"));
+                    }
+                }
+                DiscordTimer_Tick(null, null);
+            }
         }
 
         private void SetupAppDirectories()
         {
             zapretFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Zapret");
             if (!Directory.Exists(zapretFolder)) Directory.CreateDirectory(zapretFolder);
+
+            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TwZapret");
+            if (!Directory.Exists(appDataPath)) Directory.CreateDirectory(appDataPath);
+            configPath = Path.Combine(appDataPath, "config.json");
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -166,6 +242,8 @@ namespace TwZapret
             {
                 discordClient?.Dispose();
                 notifyIcon.Dispose();
+                if (cpuCounter != null) cpuCounter.Dispose();
+                if (ramCounter != null) ramCounter.Dispose();
                 base.OnClosing(e);
             }
         }
@@ -181,7 +259,7 @@ namespace TwZapret
                     if (enable)
                     {
                         string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
-                        if (exePath != null) key.SetValue(appName, $"\"{exePath}\"");
+                        if (exePath != null) key.SetValue(appName, $"\"{exePath}\" --autostart");
                     }
                     else { key.DeleteValue(appName, false); }
                 }
@@ -286,13 +364,7 @@ namespace TwZapret
                         WindowStyle = ProcessWindowStyle.Normal
                     };
                     Process.Start(psi);
-                    if (ToggleBtn != null)
-                    {
-                        ToggleBtn.Content = "ВЫКЛЮЧИТЬ";
-                        ToggleBtn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#da373c"));
-                    }
-                    isRunning = true;
-                    DiscordTimer_Tick(null, null);
+                    StatusTimer_Tick(null, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {
@@ -312,13 +384,7 @@ namespace TwZapret
                         WindowStyle = ProcessWindowStyle.Hidden
                     };
                     Process.Start(killPsi);
-                    if (ToggleBtn != null)
-                    {
-                        ToggleBtn.Content = "ВКЛЮЧИТЬ";
-                        ToggleBtn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#23a559"));
-                    }
-                    isRunning = false;
-                    DiscordTimer_Tick(null, null);
+                    StatusTimer_Tick(null, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {
@@ -353,7 +419,7 @@ namespace TwZapret
                 for (int i = 0; i < 4; i++)
                 {
                     PingReply reply = await pingSender.SendPingAsync(address, 2000);
-                    if (reply.Status == IPStatus.Success) { PingResultText.Text += $"Ответ от {reply.Address}: время={reply.RoundtripTime}мс TTL={reply.Options.Ttl}\n"; }
+                    if (reply.Status == IPStatus.Success) { PingResultText.Text += $"Ответ от {reply.Address}: время={reply.RoundtripTime}мс TTL={reply.Options?.Ttl ?? 0}\n"; }
                     else { PingResultText.Text += $"Превышен интервал ожидания.\n"; }
                 }
             }
@@ -410,6 +476,9 @@ namespace TwZapret
         {
             if (FilesListPanel == null) return;
             FilesListPanel.Children.Clear();
+            var strategyItems = new System.Collections.Generic.Dictionary<string, string>();
+            if (StrategyCombo != null) StrategyCombo.ItemsSource = null;
+
             if (string.IsNullOrEmpty(zapretFolder) || !Directory.Exists(zapretFolder))
             {
                 FilesListPanel.Children.Add(new TextBlock { Text = "Создайте папку Zapret рядом с exe и положите туда скрипты.", Foreground = Brushes.Gray, Margin = new Thickness(10) });
@@ -421,9 +490,12 @@ namespace TwZapret
                 FilesListPanel.Children.Add(new TextBlock { Text = "Скрипты .bat или .cmd не найдены в папке Zapret.", Foreground = Brushes.Gray, Margin = new Thickness(10) });
                 return;
             }
+
             foreach (string file in files)
             {
                 string fileName = Path.GetFileName(file);
+                strategyItems.Add(fileName, file);
+
                 Border itemBorder = new Border { Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1e1f22")), CornerRadius = new CornerRadius(8), Margin = new Thickness(0, 0, 0, 10), Padding = new Thickness(15) };
                 Grid itemGrid = new Grid();
                 itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -438,6 +510,19 @@ namespace TwZapret
                 itemBorder.Child = itemGrid;
                 FilesListPanel.Children.Add(itemBorder);
             }
+
+            if (StrategyCombo != null)
+            {
+                StrategyCombo.ItemsSource = strategyItems;
+                if (!string.IsNullOrEmpty(activeFilePath) && strategyItems.ContainsValue(activeFilePath))
+                {
+                    StrategyCombo.SelectedValue = activeFilePath;
+                }
+                else if (strategyItems.Count > 0)
+                {
+                    StrategyCombo.SelectedIndex = 0;
+                }
+            }
         }
 
         private void UpdateFilePathUI()
@@ -445,7 +530,21 @@ namespace TwZapret
             if (!string.IsNullOrEmpty(activeFilePath))
             {
                 if (FilePathText != null) FilePathText.Text = $"Путь: Встроенная папка Zapret";
-                if (FileNameText != null) FileNameText.Text = $"({Path.GetFileName(activeFilePath)})";
+                if (StrategyCombo != null && StrategyCombo.SelectedValue as string != activeFilePath)
+                {
+                    StrategyCombo.SelectedValue = activeFilePath;
+                }
+            }
+        }
+
+        private void StrategyCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!isAppLoaded || StrategyCombo == null) return;
+            if (StrategyCombo.SelectedValue is string selectedPath)
+            {
+                activeFilePath = selectedPath;
+                UpdateFilePathUI();
+                SaveSettings();
             }
         }
 
@@ -476,6 +575,8 @@ namespace TwZapret
             else if (index == 1) { newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#111214"), 0.0)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#1e1f22"), 1.0)); }
             else if (index == 2) { newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#1e1f22"), 0.0)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#132a1e"), 1.0)); }
             else if (index == 3) { newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#1e1f22"), 0.0)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#2b1b3d"), 1.0)); }
+            else if (index == 4) { newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#0f2027"), 0.0)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#203a43"), 0.5)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#2c5364"), 1.0)); }
+            else if (index == 5) { newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#3a1c71"), 0.0)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#d76d77"), 0.5)); newBrush.GradientStops.Add(new GradientStop((Color)ColorConverter.ConvertFromString("#ffaf7b"), 1.0)); }
             MainGrid.Background = newBrush;
             SaveSettings();
         }
