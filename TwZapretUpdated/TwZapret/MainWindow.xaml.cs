@@ -75,6 +75,8 @@ namespace TwZapret
                 StrategyCombo_SelectionChanged(StrategyCombo, null!);
             }
 
+            if (AppTitle != null) AppTitle.Text = "TwZapret - Главная - 🏠︎";
+
             CheckAutostart();
         }
 
@@ -95,7 +97,7 @@ namespace TwZapret
                             ProcessStartInfo psi = new ProcessStartInfo
                             {
                                 FileName = activeFilePath,
-                                WorkingDirectory = dir,
+                                WorkingDirectory = Path.GetFullPath(dir),
                                 UseShellExecute = true,
                                 Verb = "runas",
                                 WindowStyle = ProcessWindowStyle.Hidden
@@ -358,7 +360,7 @@ namespace TwZapret
                     ProcessStartInfo psi = new ProcessStartInfo
                     {
                         FileName = activeFilePath,
-                        WorkingDirectory = dir,
+                        WorkingDirectory = Path.GetFullPath(dir),
                         UseShellExecute = true,
                         Verb = "runas",
                         WindowStyle = ProcessWindowStyle.Normal
@@ -555,12 +557,30 @@ namespace TwZapret
             if (tag == null || MainGrid == null) return;
             foreach (var child in MainGrid.Children) { if (child is Grid grid && grid.Name.StartsWith("Tab")) { grid.Visibility = Visibility.Hidden; } }
             switch (tag) {
-                case "1": if (FindName("Tab1_Main") is Grid t1) t1.Visibility = Visibility.Visible; break;
-                case "2": if (FindName("Tab2_VPN") is Grid t2) t2.Visibility = Visibility.Visible; break;
-                case "3": if (FindName("Tab3_Ping") is Grid t3) t3.Visibility = Visibility.Visible; break;
-                case "4": if (FindName("Tab4_Monitor") is Grid t4) t4.Visibility = Visibility.Visible; break;
-                case "5": if (FindName("Tab5_Hub") is Grid t5) t5.Visibility = Visibility.Visible; break;
-                case "6": if (FindName("Tab6_Settings") is Grid t6) t6.Visibility = Visibility.Visible; break;
+                case "1":
+                    if (FindName("Tab1_Main") is Grid t1) t1.Visibility = Visibility.Visible;
+                    if (AppTitle != null) AppTitle.Text = "TwZapret - Главная - 🏠︎";
+                    break;
+                case "2":
+                    if (FindName("Tab2_VPN") is Grid t2) t2.Visibility = Visibility.Visible;
+                    if (AppTitle != null) AppTitle.Text = "TwZapret - VPN - 🌐";
+                    break;
+                case "3":
+                    if (FindName("Tab3_Ping") is Grid t3) t3.Visibility = Visibility.Visible;
+                    if (AppTitle != null) AppTitle.Text = "TwZapret - Сеть - 📡";
+                    break;
+                case "4":
+                    if (FindName("Tab4_Monitor") is Grid t4) t4.Visibility = Visibility.Visible;
+                    if (AppTitle != null) AppTitle.Text = "TwZapret - Мониторинг - 📊";
+                    break;
+                case "5":
+                    if (FindName("Tab5_Hub") is Grid t5) t5.Visibility = Visibility.Visible;
+                    if (AppTitle != null) AppTitle.Text = "TwZapret - Файлы - 📁";
+                    break;
+                case "6":
+                    if (FindName("Tab6_Settings") is Grid t6) t6.Visibility = Visibility.Visible;
+                    if (AppTitle != null) AppTitle.Text = "TwZapret - Настройки - ⚙️";
+                    break;
             }
         }
 

@@ -5,6 +5,33 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="CanMinimize">
 
     <Window.Resources>
+        <Style x:Key="StrategyListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#A0A0A0"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#2b2d31"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#5865F2"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="TabButton" TargetType="Button">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
@@ -73,7 +100,7 @@
             </Grid.Background>
 
             <Grid Grid.Row="0" Grid.ColumnSpan="2" Background="Transparent" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-                <TextBlock Text="TwZapret" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                <TextBlock x:Name="AppTitle" Text="TwZapret" Foreground="White" FontWeight="Bold" VerticalAlignment="Center" Margin="15,0,0,0"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="—" Style="{StaticResource WindowBtn}" Click="MinimizeBtn_Click"/>
                     <Button Content="✕" Click="CloseBtn_Click">
@@ -95,25 +122,45 @@
                     <Border Background="#5865F2" Width="40" Height="40" CornerRadius="10" Margin="0,0,0,20">
                         <TextBlock Text="TW" Foreground="White" FontWeight="Bold" FontSize="18" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
-                    <Button x:Name="Tab1Btn" Content="1" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="1"/>
-                    <Button x:Name="Tab2Btn" Content="2" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="2"/>
-                    <Button x:Name="Tab3Btn" Content="3" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="3"/>
-                    <Button x:Name="Tab4Btn" Content="4" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="4"/>
-                    <Button x:Name="Tab5Btn" Content="5" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="5"/>
-                    <Button x:Name="Tab6Btn" Content="⚙" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="6" Margin="0,30,0,0"/>
+                    <Button x:Name="Tab1Btn" Content="🏠" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="1"/>
+                    <Button x:Name="Tab2Btn" Content="🌐" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="2"/>
+                    <Button x:Name="Tab3Btn" Content="📡" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="3"/>
+                    <Button x:Name="Tab4Btn" Content="📊" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="4"/>
+                    <Button x:Name="Tab5Btn" Content="📁" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="5"/>
+                    <Button x:Name="Tab6Btn" Content="⚙️" Style="{StaticResource TabButton}" Click="Tab_Click" Tag="6" Margin="0,30,0,0"/>
                 </StackPanel>
             </Border>
 
             <Grid x:Name="Tab1_Main" Grid.Row="1" Grid.Column="1" Visibility="Visible">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock x:Name="MainTitle" Text="Zapret" FontSize="48" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
-                    <ComboBox x:Name="StrategyCombo" Width="300" Height="35" Margin="0,0,0,20" Background="#1e1f22" Foreground="White" BorderBrush="#5865F2" SelectionChanged="StrategyCombo_SelectionChanged" DisplayMemberPath="Key" SelectedValuePath="Value" />
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="300"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock x:Name="MainTitle" Text="Zapret" FontSize="48" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,20"/>
                     <Button x:Name="ToggleBtn" Content="ВКЛЮЧИТЬ" Width="200" Height="60" Background="#23a559" Foreground="White" Click="ToggleBtn_Click" Cursor="Hand" FontWeight="Bold" FontSize="20">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
                     </Button>
-                    <TextBlock x:Name="FilePathText" Text="Зайдите в папку на вкладке 5" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+                    <TextBlock x:Name="FilePathText" Text="Путь: Встроенная папка Zapret" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"/>
                 </StackPanel>
-                <TextBlock Text="Версия № 0.6.0" Foreground="#555" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="10"/>
+
+                <Border Grid.Column="1" Background="#111214" CornerRadius="10" Margin="0,20,20,40" Padding="10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Выберите стратегию:" Foreground="#A0A0A0" FontSize="14" Margin="0,0,0,10"/>
+                        <ListBox x:Name="StrategyCombo" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                                 Foreground="White" SelectionChanged="StrategyCombo_SelectionChanged"
+                                 DisplayMemberPath="Key" SelectedValuePath="Value"
+                                 ItemContainerStyle="{StaticResource StrategyListBoxItemStyle}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Text="Версия № 0.6.0" Foreground="#555" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="10"/>
             </Grid>
 
             <Grid x:Name="Tab2_VPN" Grid.Row="1" Grid.Column="1" Visibility="Hidden" Margin="30">
